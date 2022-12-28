@@ -37,11 +37,14 @@ export class Database{
 			const now = (new Date()).toISOString();
 			const jobRequest = await c.req.json() as NexrenderJob;
 
+			if(typeof jobRequest.tags == "string"){
+				jobRequest.tags = jobRequest.tags.replace(/[^a-z0-9, ]/gi, "");
+			}
+
 			const jobID = nanoid();
 			const job: NexrenderJob = Object.assign({
 				uid: jobID,
 				type: "default",
-				state: "queued",
 				output: "",
 				priority: 0,
 				tags: "",
@@ -60,10 +63,14 @@ export class Database{
 				startedAt: null,
 				finishedAt: null,
 				errorAt: null,
-				creator: c.req.header("x-forwarded-for") || c.req.header("CF-Connecting-IP"),
 				executor: null,
 				error: null
-			}, jobRequest);
+			},
+			jobRequest,
+			{
+				state: "queued",
+				creator: c.req.header("x-forwarded-for") || c.req.header("CF-Connecting-IP"),
+			});
 
 			console.log(`creating new job ${jobID}`);
 			await this.state.storage.put(jobID, job);
