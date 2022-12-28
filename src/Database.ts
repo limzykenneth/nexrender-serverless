@@ -34,48 +34,52 @@ export class Database{
 		});
 
 		server.post("/jobs", async (c) => {
-			const now = (new Date()).toISOString();
-			const jobRequest = await c.req.json() as NexrenderJob;
+			try{
+				const now = (new Date()).toISOString();
+				const jobRequest = await c.req.json() as NexrenderJob;
 
-			if(typeof jobRequest.tags == "string"){
-				jobRequest.tags = jobRequest.tags.replace(/[^a-z0-9, ]/gi, "");
+				if(typeof jobRequest.tags == "string"){
+					jobRequest.tags = jobRequest.tags.replace(/[^a-z0-9, ]/gi, "");
+				}
+
+				const jobID = nanoid();
+				const job: NexrenderJob = Object.assign({
+					uid: jobID,
+					type: "default",
+					output: "",
+					priority: 0,
+					tags: "",
+					renderProgress: 0,
+					template: {
+						src: "",
+						composition: ""
+					},
+					assets: [],
+					actions: {
+						prerender: [],
+						postrender: []
+					},
+					createdAt: now,
+					updatedAt: now,
+					startedAt: null,
+					finishedAt: null,
+					errorAt: null,
+					executor: null,
+					error: null
+				},
+				jobRequest,
+				{
+					state: "queued",
+					creator: c.req.header("x-forwarded-for") || c.req.header("CF-Connecting-IP"),
+				});
+
+				console.log(`creating new job ${jobID}`);
+				await this.state.storage.put(jobID, job);
+				this.jobs.set(jobID, job);
+				return c.json(job);
+			}catch(err){
+				return c.text(err.stack, 400);
 			}
-
-			const jobID = nanoid();
-			const job: NexrenderJob = Object.assign({
-				uid: jobID,
-				type: "default",
-				output: "",
-				priority: 0,
-				tags: "",
-				renderProgress: 0,
-				template: {
-					src: "",
-					composition: ""
-				},
-				assets: [],
-				actions: {
-					prerender: [],
-					postrender: []
-				},
-				createdAt: now,
-				updatedAt: now,
-				startedAt: null,
-				finishedAt: null,
-				errorAt: null,
-				executor: null,
-				error: null
-			},
-			jobRequest,
-			{
-				state: "queued",
-				creator: c.req.header("x-forwarded-for") || c.req.header("CF-Connecting-IP"),
-			});
-
-			console.log(`creating new job ${jobID}`);
-			await this.state.storage.put(jobID, job);
-			this.jobs.set(jobID, job);
-			return c.json(job);
 		});
 
 		server.get("/jobs", async (c) => {
@@ -128,23 +132,27 @@ export class Database{
 		});
 
 		server.put("/jobs/:uid", async (c) => {
-			const jobID = c.req.param("uid");
-			const job: NexrenderJob = this.jobs.get(jobID);
-			if(!job) return c.text("Not Found", 404);
+			try{
+				const jobID = c.req.param("uid");
+				const job: NexrenderJob = this.jobs.get(jobID);
+				if(!job) return c.text("Not Found", 404);
 
-			const now = (new Date()).toISOString();
-			const updatedJob = Object.assign(
-				{},
-				job,
-				await c.req.json(),
-				{updatedAt: now}
-			);
+				const now = (new Date()).toISOString();
+				const updatedJob = Object.assign(
+					{},
+					job,
+					await c.req.json(),
+					{updatedAt: now}
+				);
 
-			console.log(`updating job ${jobID}`);
-			await this.state.storage.put(jobID, updatedJob);
-			this.jobs.set(jobID, updatedJob);
+				console.log(`updating job ${jobID}`);
+				await this.state.storage.put(jobID, updatedJob);
+				this.jobs.set(jobID, updatedJob);
 
-			return c.json(updatedJob);
+				return c.json(updatedJob);
+			}catch(err){
+				return c.text(err.stack, 400);
+			}
 		});
 
 		server.delete("/jobs/:uid", async (c) => {
@@ -155,6 +163,11 @@ export class Database{
 			if(success) this.jobs.delete(jobID);
 
 			return c.json({ id: jobID, removed: success });
+		});
+
+		server.onError((err, c) => {
+			console.error(err);
+			return c.text("Unknown error occurred", 500);
 		});
 
 		this.app.route("/api/v1", server);
