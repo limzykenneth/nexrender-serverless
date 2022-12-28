@@ -3,19 +3,36 @@ import type {NexrenderJob, NexrenderStatus} from "./types";
 import {Hono} from "hono";
 import {nanoid} from "nanoid";
 
+interface Env{
+	NEXRENDER_SECRET?: string
+}
+
 export class Database{
 	state: DurableObjectState;
+	secret: string;
 	jobs: Map<string, NexrenderJob>;
 	app: Hono = new Hono();
 
-	constructor(state: DurableObjectState){
+	constructor(state: DurableObjectState, env: Env){
 		this.state = state;
+		this.secret = env.NEXRENDER_SECRET || null;
 		this.state.blockConcurrencyWhile(async () => {
 			const jobs = await this.state.storage.list<NexrenderJob>();
 			this.jobs = jobs || new Map();
 		});
 
 		const server = new Hono();
+
+		server.use("*", async (c, next) => {
+			if(this.secret === null){
+				await next();
+			}else if(c.req.header("nexrender-secret") === this.secret){
+				await next();
+			}else{
+				return c.text("Wrong or no authentication secret provided. Please check the \"nexrender-secret\" header.", 403);
+			}
+		});
+
 		server.post("/jobs", async (c) => {
 			const now = (new Date()).toISOString();
 			const jobRequest = await c.req.json() as NexrenderJob;
