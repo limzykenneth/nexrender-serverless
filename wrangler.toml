@@ -6,6 +6,9 @@ workers_dev = true
 [build]
 command = "npx webpack --mode=production"
 
+# [vars]
+# NEXRENDER_SECRET = "secret"
+
 [durable_objects]
 bindings = [
   { name = "DATABASE", class_name = "Database" }
