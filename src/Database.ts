@@ -60,7 +60,7 @@ export class Database{
 				startedAt: null,
 				finishedAt: null,
 				errorAt: null,
-				creator: null,
+				creator: c.req.header("x-forwarded-for") || c.req.header("CF-Connecting-IP"),
 				executor: null,
 				error: null
 			}, jobRequest);
@@ -80,6 +80,7 @@ export class Database{
 			console.log("fetching status list of all jobs");
 			return c.json(this.getStatus());
 		});
+
 		server.get("/jobs/pickup/:tags?", async (c) => {
 			console.log("fetching a pickup job for a worker");
 
@@ -94,15 +95,19 @@ export class Database{
 				return c.json({});
 			}
 
+			const now = (new Date()).toISOString();
 			// FIFO (oldest-first)
 			const job = queued[0];
 			job.state = "picked";
+			job.updatedAt = now;
+			job.executor = c.req.header("x-forwarded-for") || c.req.header("CF-Connecting-IP");
 
 			await this.state.storage.put(job.uid, job);
 			this.jobs.set(job.uid, job);
 
 			return c.json(job);
 		});
+
 		server.get("/jobs/:uid/status", async (c) => {
 			const jobID = c.req.param("uid");
 			console.log(`fetching job status ${jobID}`);
@@ -120,7 +125,13 @@ export class Database{
 			const job: NexrenderJob = this.jobs.get(jobID);
 			if(!job) return c.text("Not Found", 404);
 
-			const updatedJob = Object.assign({}, job, await c.req.json());
+			const now = (new Date()).toISOString();
+			const updatedJob = Object.assign(
+				{},
+				job,
+				await c.req.json(),
+				{updatedAt: now}
+			);
 
 			console.log(`updating job ${jobID}`);
 			await this.state.storage.put(jobID, updatedJob);
