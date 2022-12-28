@@ -1,5 +1,6 @@
 import {Hono} from "hono";
 import {cors} from "hono/cors";
+export {Database} from "./Database";
 
 const server = new Hono();
 server.get("/health", (c) => c.text("ok"));
