@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20221111.1",
+    "@typescript-eslint/eslint-plugin": "^5.47.1",
     "fork-ts-checker-webpack-plugin": "^7.2.14",
     "swc-loader": "^0.2.3",
     "webpack": "^5.75.0",
