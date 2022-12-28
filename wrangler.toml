@@ -1,0 +1,16 @@
+name = "nexrender-serverless"
+main = "dist/worker.js"
+compatibility_date = "2022-12-27"
+workers_dev = true
+
+[build]
+command = "npx webpack --mode=production"
+
+[durable_objects]
+bindings = [
+  { name = "DATABASE", class_name = "Database" }
+]
+
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["Database"]

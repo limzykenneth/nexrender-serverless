@@ -1,0 +1,25 @@
+{
+  "name": "nexrender-serverless",
+  "version": "1.0.0",
+  "description": "Serverless implementation of Nexrender server",
+  "module": "dist/worker.js",
+  "type": "module",
+  "author": "limzykenneth <limzy.kenneth@gmail.com>",
+  "license": "UNLICENSED",
+  "scripts": {
+    "watch": "wrangler dev --local --persist",
+    "deploy": "wrangler publish --env production"
+  },
+  "dependencies": {
+    "hono": "^2.7.0",
+    "nanoid": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20221111.1",
+    "fork-ts-checker-webpack-plugin": "^7.2.14",
+    "swc-loader": "^0.2.3",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
+    "wrangler": "^2.6.2"
+  }
+}
