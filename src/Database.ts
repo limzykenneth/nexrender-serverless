@@ -18,24 +18,36 @@ export class Database{
 		const server = new Hono();
 		server.post("/jobs", async (c) => {
 			const now = (new Date()).toISOString();
+			const jobRequest = await c.req.json() as NexrenderJob;
+
 			const jobID = nanoid();
-			const job: NexrenderJob = {
+			const job: NexrenderJob = Object.assign({
 				uid: jobID,
 				type: "default",
 				state: "queued",
 				output: "",
 				priority: 0,
+				tags: "",
 				renderProgress: 0,
 				template: {
 					src: "",
 					composition: ""
 				},
+				assets: [],
+				actions: {
+					prerender: [],
+					postrender: []
+				},
 				createdAt: now,
 				updatedAt: now,
 				startedAt: null,
 				finishedAt: null,
-				errorAt: null
-			};
+				errorAt: null,
+				creator: null,
+				executor: null,
+				error: null
+			}, jobRequest);
+
 			console.log(`creating new job ${jobID}`);
 			await this.state.storage.put(jobID, job);
 			this.jobs.set(jobID, job);
@@ -89,6 +101,8 @@ export class Database{
 		server.put("/jobs/:uid", async (c) => {
 			const jobID = c.req.param("uid");
 			const job: NexrenderJob = this.jobs.get(jobID);
+			if(!job) return c.text("Not Found", 404);
+
 			const updatedJob = Object.assign({}, job, await c.req.json());
 
 			console.log(`updating job ${jobID}`);
@@ -115,6 +129,9 @@ export class Database{
 		return this.app.fetch(request);
 	}
 
+
+	getStatus(): NexrenderStatus[];
+	getStatus(jobID: string): NexrenderStatus;
 	getStatus(jobID?: string): NexrenderStatus|NexrenderStatus[] {
 		if(jobID){
 			const job: NexrenderJob = this.jobs.get(jobID);
@@ -123,26 +140,34 @@ export class Database{
 				uid: job.uid,
 				state: job.state,
 				type: job.type,
+				tags: job.tags,
 				renderProgress: job.renderProgress,
+				error: job.error,
 				createdAt: job.createdAt,
 				updatedAt: job.updatedAt,
 				startedAt: job.startedAt,
 				finishedAt: job.finishedAt,
-				errorAt: job.errorAt
+				errorAt: job.errorAt,
+				jobCreator: job.creator,
+				jobExecutor: job.executor
 			};
 		}else{
-			const result = [];
+			const result: NexrenderStatus[] = [];
 			for(const job of this.jobs.values()){
 				result.push({
 					uid: job.uid,
 					state: job.state,
 					type: job.type,
+					tags: job.tags,
 					renderProgress: job.renderProgress,
+					error: job.error,
 					createdAt: job.createdAt,
 					updatedAt: job.updatedAt,
 					startedAt: job.startedAt,
 					finishedAt: job.finishedAt,
-					errorAt: job.errorAt
+					errorAt: job.errorAt,
+					jobCreator: job.creator,
+					jobExecutor: job.executor
 				});
 			}
 

@@ -9,15 +9,46 @@ interface Template{
 	src: string
 	composition: string
 
-	// frameStart: undefined
-    // frameEnd: undefined
-    // frameIncrement: undefined
+	frameStart?: number
+    frameEnd?: number
+    frameIncrement?: number
 
-    // continueOnMissing: false
-    // settingsTemplate: undefined
-    // outputModule: undefined
-    // outputExt: undefined
-    // imageSequence: false
+    continueOnMissing?: boolean
+    settingsTemplate?: string
+    outputModule?: string
+    outputExt?: string
+    imageSequence?: boolean
+}
+
+type AssetType = "image" | "audio" | "video" | "data" | "script" | "static";
+
+interface Asset{
+	type: AssetType
+	src?: string
+	layerName: string
+	layerIndex?: number
+	composition?: string
+	name?: string
+	extension?: string
+	useOriginal?: boolean
+	property?: string
+	value?: string
+}
+
+interface Actions {
+	predownload?: Action[]
+	postdownload?: Action[]
+	prerender?: Action[]
+	postrender?: Action[]
+}
+
+interface Action {
+	module: string
+	input?: string
+	output?: string
+	preset?: string
+	provider?: string
+	params?: unknown
 }
 
 export interface NexrenderJob{
@@ -26,27 +57,33 @@ export interface NexrenderJob{
 	state: JobState
 	output: string
 	priority: number
+	tags: string
 	renderProgress: number
 	template: Template
+	assets: Asset[]
+	actions: Actions
 	createdAt: string
-	updatedAt: string,
+	updatedAt: string
 	startedAt: string
 	finishedAt: string
 	errorAt: string
+	creator: string // IP address
+	executor: string // IP address
+	error: string[]
 }
 
 export interface NexrenderStatus{
 	uid: string
 	state: JobState
 	type: string
-	// tags: job.tags || null
+	tags: string
 	renderProgress: number
-	// error: job.error || null
+	error: string[]
 	createdAt: string
 	updatedAt: string
 	startedAt: string
 	finishedAt: string
 	errorAt: string
-	// jobCreator: job.creator
-	// jobExecutor: job.executor || null
+	jobCreator: string // IP address
+	jobExecutor: string // IP address
 }
