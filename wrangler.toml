@@ -2,12 +2,14 @@ name = "nexrender-serverless"
 main = "dist/worker.js"
 compatibility_date = "2022-12-27"
 workers_dev = true
+compatibility_flags = ["durable_object_alarms"]
 
 [build]
 command = "npx webpack --mode=production"
 
-# [vars]
+[vars]
 # NEXRENDER_SECRET = "secret"
+# CLEANUP_INTERVAL = "30000"
 
 [durable_objects]
 bindings = [

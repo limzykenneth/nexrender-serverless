@@ -5,7 +5,7 @@ export {Database} from "./Database";
 const server = new Hono();
 server.get("/health", (c) => c.text("ok"));
 server.use("/jobs/*", (c) => {
-	const id = c.env.DATABASE.idFromName("test");
+	const id = c.env.DATABASE.idFromName("default");
 	const stub = c.env.DATABASE.get(id);
 
 	return stub.fetch(c.req);

@@ -5,20 +5,27 @@ import {nanoid} from "nanoid";
 
 interface Env{
 	NEXRENDER_SECRET?: string
+	CLEANUP_INTERVAL?: string
 }
 
 export class Database{
 	state: DurableObjectState;
 	secret: string;
+	cleanupInterval: number;
 	jobs: Map<string, NexrenderJob>;
 	app: Hono = new Hono();
 
 	constructor(state: DurableObjectState, env: Env){
 		this.state = state;
 		this.secret = env.NEXRENDER_SECRET || null;
+		this.cleanupInterval = parseInt(env.CLEANUP_INTERVAL) || null;
 		this.state.blockConcurrencyWhile(async () => {
 			const jobs = await this.state.storage.list<NexrenderJob>();
 			this.jobs = jobs || new Map();
+
+			if(this.cleanupInterval){
+				this.state.storage.setAlarm(Date.now() + this.cleanupInterval);
+			}
 		});
 
 		const server = new Hono();
@@ -177,6 +184,32 @@ export class Database{
 		return this.app.fetch(request);
 	}
 
+	async alarm() {
+		console.log("starting clean up job");
+		let deleteKeys = [];
+		for(const [jobID, job] of this.jobs.entries()){
+			if(job.state === "finished" || job.state === "error"){
+				deleteKeys.push(jobID);
+			}
+
+			if(deleteKeys.length === 128){
+				await this.state.storage.delete(deleteKeys);
+				deleteKeys.forEach((key) => {
+					this.jobs.delete(key);
+				});
+				deleteKeys = [];
+			}
+		}
+
+		if(deleteKeys.length > 0){
+			await this.state.storage.delete(deleteKeys);
+			deleteKeys.forEach((key) => {
+				this.jobs.delete(key);
+			});
+		}
+
+		this.state.storage.setAlarm(Date.now() + this.cleanupInterval);
+	}
 
 	getStatus(): NexrenderStatus[];
 	getStatus(jobID: string): NexrenderStatus;
