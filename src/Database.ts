@@ -72,6 +72,9 @@ export class Database{
 			}else if(c.req.header("Authorization")){
 				try{
 					await jose.jwtVerify(c.req.header("Authorization").split(" ")[1], this.publicKey);
+
+					// NOTE: check payload
+
 					await next();
 				}catch(err){
 					console.error(err);

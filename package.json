@@ -1,6 +1,6 @@
 {
   "name": "nexrender-serverless",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Serverless implementation of Nexrender server",
   "module": "dist/worker.js",
   "type": "module",
