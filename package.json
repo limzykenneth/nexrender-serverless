@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "hono": "^2.7.0",
+    "jose": "^4.11.1",
     "nanoid": "^4.0.0"
   },
   "devDependencies": {

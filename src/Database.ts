@@ -2,15 +2,18 @@ import type {NexrenderJob, NexrenderStatus} from "./types";
 
 import {Hono} from "hono";
 import {nanoid} from "nanoid";
+import * as jose from "jose";
 
 interface Env{
 	NEXRENDER_SECRET?: string
+	NEXRENDER_PUBLIC_KEY?: string
 	CLEANUP_INTERVAL?: string
 }
 
 export class Database{
 	state: DurableObjectState;
 	secret: string;
+	publicKey: jose.KeyLike;
 	cleanupInterval: number;
 	jobs: Map<string, NexrenderJob>;
 	app: Hono = new Hono();
@@ -20,6 +23,12 @@ export class Database{
 		this.secret = env.NEXRENDER_SECRET || null;
 		this.cleanupInterval = parseInt(env.CLEANUP_INTERVAL) || null;
 		this.state.blockConcurrencyWhile(async () => {
+			if(env.NEXRENDER_PUBLIC_KEY){
+				this.publicKey = await jose.importSPKI(env.NEXRENDER_PUBLIC_KEY, "RS256");
+			}else{
+				this.publicKey = null;
+			}
+
 			const jobs = await this.state.storage.list<NexrenderJob>();
 			this.jobs = jobs || new Map();
 
@@ -31,10 +40,18 @@ export class Database{
 		const server = new Hono();
 
 		server.use("*", async (c, next) => {
-			if(this.secret === null){
+			if(this.secret === null && this.publicKey === null){
 				await next();
 			}else if(c.req.header("nexrender-secret") === this.secret){
 				await next();
+			}else if(c.req.header("Authorization")){
+				try{
+					await jose.jwtVerify(c.req.header("Authorization").split(" ")[1], this.publicKey);
+					await next();
+				}catch(err){
+					console.error(err);
+					return c.text("Wrong or no authentication secret provided. Please check the \"nexrender-secret\" header.", 403);
+				}
 			}else{
 				return c.text("Wrong or no authentication secret provided. Please check the \"nexrender-secret\" header.", 403);
 			}
