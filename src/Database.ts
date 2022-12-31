@@ -8,6 +8,13 @@ interface Env{
 	NEXRENDER_SECRET?: string
 	NEXRENDER_PUBLIC_KEY?: string
 	CLEANUP_INTERVAL?: string
+	__D1_BETA__NEXRENDER_D1: D1Database
+}
+
+interface TenantCredentials{
+	Name: string
+	Secret: string
+	PublicKey: string
 }
 
 export class Database{
@@ -20,11 +27,26 @@ export class Database{
 
 	constructor(state: DurableObjectState, env: Env){
 		this.state = state;
-		this.secret = env.NEXRENDER_SECRET || null;
 		this.cleanupInterval = parseInt(env.CLEANUP_INTERVAL) || null;
 		this.state.blockConcurrencyWhile(async () => {
-			if(env.NEXRENDER_PUBLIC_KEY){
-				this.publicKey = await jose.importSPKI(env.NEXRENDER_PUBLIC_KEY, "RS256");
+			const tenantCredentials = await env.__D1_BETA__NEXRENDER_D1
+				.prepare("SELECT Name, Secret, PublicKey FROM Tenants WHERE ObjectID = ?")
+				.bind(state.id.toString())
+				.first() as TenantCredentials;
+
+			let publicKeyString: string;
+			if(!tenantCredentials || tenantCredentials.Name === "default"){
+				// Is default
+				this.secret = env.NEXRENDER_SECRET || tenantCredentials?.Secret || null;
+				publicKeyString = env.NEXRENDER_PUBLIC_KEY || tenantCredentials.PublicKey || null;
+			}else{
+				// Not default
+				this.secret = tenantCredentials?.Secret || null;
+				publicKeyString = tenantCredentials.PublicKey || null;
+			}
+
+			if(publicKeyString){
+				this.publicKey = await jose.importSPKI(publicKeyString, "RS256");
 			}else{
 				this.publicKey = null;
 			}
