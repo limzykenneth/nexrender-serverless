@@ -8,15 +8,16 @@ compatibility_flags = ["durable_object_alarms"]
 command = "npx webpack --mode=production"
 
 [vars]
-# NEXRENDER_SECRET = "secret2"
 # CLEANUP_INTERVAL = "30000"
+# NEXRENDER_SECRET = "secret"
 # NEXRENDER_PUBLIC_KEY = '''
 # '''
 
-[[ d1_databases ]]
-binding = "NEXRENDER_D1"
-database_name = "Nexrender"
-database_id = ""
+# Uncomment to enable multi-tenant mode
+# [[ d1_databases ]]
+# binding = "NEXRENDER_D1"
+# database_name = "Nexrender"
+# database_id = ""
 
 [durable_objects]
 bindings = [

@@ -29,20 +29,23 @@ export class Database{
 		this.state = state;
 		this.cleanupInterval = parseInt(env.CLEANUP_INTERVAL) || null;
 		this.state.blockConcurrencyWhile(async () => {
-			const tenantCredentials = await env.__D1_BETA__NEXRENDER_D1
-				.prepare("SELECT Name, Secret, PublicKey FROM Tenants WHERE ObjectID = ?")
-				.bind(state.id.toString())
-				.first() as TenantCredentials;
+			let tenantCredentials = undefined;
+			if(env.__D1_BETA__NEXRENDER_D1){
+				tenantCredentials = await env.__D1_BETA__NEXRENDER_D1
+					.prepare("SELECT Name, Secret, PublicKey FROM Tenants WHERE ObjectID = ?")
+					.bind(state.id.toString())
+					.first() as TenantCredentials;
+			}
 
 			let publicKeyString: string;
 			if(!tenantCredentials || tenantCredentials.Name === "default"){
 				// Is default
 				this.secret = env.NEXRENDER_SECRET || tenantCredentials?.Secret || null;
-				publicKeyString = env.NEXRENDER_PUBLIC_KEY || tenantCredentials.PublicKey || null;
+				publicKeyString = env.NEXRENDER_PUBLIC_KEY || tenantCredentials?.PublicKey || null;
 			}else{
 				// Not default
 				this.secret = tenantCredentials?.Secret || null;
-				publicKeyString = tenantCredentials.PublicKey || null;
+				publicKeyString = tenantCredentials?.PublicKey || null;
 			}
 
 			if(publicKeyString){
