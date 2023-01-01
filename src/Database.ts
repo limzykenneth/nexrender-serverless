@@ -3,6 +3,7 @@ import type {NexrenderJob, NexrenderStatus} from "./types";
 import {Hono} from "hono";
 import {nanoid} from "nanoid";
 import * as jose from "jose";
+import authorization from "./authorization";
 
 interface Env{
 	NEXRENDER_SECRET?: string
@@ -20,6 +21,7 @@ interface TenantCredentials{
 export class Database{
 	state: DurableObjectState;
 	secret: string;
+	name: string;
 	publicKey: jose.KeyLike;
 	cleanupInterval: number;
 	jobs: Map<string, NexrenderJob>;
@@ -54,6 +56,8 @@ export class Database{
 				this.publicKey = null;
 			}
 
+			this.name = tenantCredentials?.Name || "default";
+
 			const jobs = await this.state.storage.list<NexrenderJob>();
 			this.jobs = jobs || new Map();
 
@@ -71,9 +75,11 @@ export class Database{
 				await next();
 			}else if(c.req.header("Authorization")){
 				try{
-					await jose.jwtVerify(c.req.header("Authorization").split(" ")[1], this.publicKey);
+					const {payload, protectedHeader} = await jose.jwtVerify(c.req.header("Authorization").split(" ")[1], this.publicKey);
 
-					// NOTE: check payload
+					if(authorization[this.name] && !authorization[this.name](payload, protectedHeader)){
+						return c.text("Wrong or no authentication secret provided. Please check the \"nexrender-secret\" header.", 403);
+					}
 
 					await next();
 				}catch(err){
