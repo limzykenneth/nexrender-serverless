@@ -5,7 +5,7 @@
   "module": "dist/worker.js",
   "type": "module",
   "author": "limzykenneth <limzy.kenneth@gmail.com>",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "watch": "wrangler dev --local --persist",
     "deploy": "wrangler publish --env production"
