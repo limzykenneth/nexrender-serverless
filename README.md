@@ -3,7 +3,11 @@
 Re-implementation of [Nexrender Server](https://github.com/inlife/nexrender/tree/master/packages/nexrender-server) using Cloudflare Workers with Durable Objects.
 
 ## Usage
-(TBD)
+```
+wrangler generate my-app https://github.com/limzykenneth/nexrender-serverless
+```
+
+(More info to be added in the future. At this point you should only use this if you are somewhat familiar with Cloudflare Workers.)
 
 ## Differences
 This implmentation is fully compatible with the rest of Nexrender's tooling so it will work out of the box with `@nexrender/worker` and `@nexrender/api`. There are however some minor differences and [additional implementations](#optional-features) that does not exist in Nexrender Server.
@@ -23,7 +27,7 @@ By setting the `NEXRENDER_PUBLIC_KEY` environment variable it will enable public
 
 Once the key is set, you can generate a JWT token signed with the private key and attach it to every request to the server using the `Authorization` header with the `Bearer` scheme.
 
-Additional checks on the payload or other JWT fields are pending implementation.
+Additional checks on the payload or other JWT fields can be done by editing [`src/authorization.ts`](./src/authorization.ts) file which have a function `default` under the exported `authorization` object. This function takes in the parsed payload and JWT header that you can check and return true if access should be granted and false if it should be rejected. For users of [multi-tenant mode](#multi-tenant-mode) each key in the `authorization` correspond to the name of each tenant you have so each tenant can have different payload/header checks. If you do not implement a check function for your tenant, the payload/header check will be skipped and authorization just rely on having a valid signed JWT.
 
 This authorization method can be used in conjuction with the `nexrender-secret` header if desired. Only one of the two authorization method need to pass for the client to be authorized, if both are provided by the client.
 
