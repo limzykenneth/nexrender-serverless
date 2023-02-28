@@ -9,7 +9,7 @@ interface Env{
 	NEXRENDER_SECRET?: string
 	NEXRENDER_PUBLIC_KEY?: string
 	CLEANUP_INTERVAL?: string
-	__D1_BETA__NEXRENDER_D1: D1Database
+	NEXRENDER_D1?: D1Database
 }
 
 interface TenantCredentials{
@@ -32,8 +32,8 @@ export class Database{
 		this.cleanupInterval = parseInt(env.CLEANUP_INTERVAL) || null;
 		this.state.blockConcurrencyWhile(async () => {
 			let tenantCredentials = undefined;
-			if(env.__D1_BETA__NEXRENDER_D1){
-				tenantCredentials = await env.__D1_BETA__NEXRENDER_D1
+			if(env.NEXRENDER_D1){
+				tenantCredentials = await env.NEXRENDER_D1
 					.prepare("SELECT Name, Secret, PublicKey FROM Tenants WHERE ObjectID = ?")
 					.bind(state.id.toString())
 					.first() as TenantCredentials;
